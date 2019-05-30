@@ -1,4 +1,13 @@
 abstract type AbstractBridgeOptimizer <: MOI.AbstractOptimizer end
+
+mutable struct BridgeOptimizer{OT<:MOI.ModelLike} <: AbstractBridgeOptimizer
+    model::OT   # Internal model
+end
+BridgeOptimizer(model::MOI.ModelLike) = BridgeOptimizer{typeof(model)}(model)
+function is_bridged(b::BridgeOptimizer, F::Type{<:MOI.AbstractFunction}, S::Type{<:MOI.AbstractSet})
+    !MOI.supports_constraint(b.model, F, S)
+end
+
 function is_bridged(b::AbstractBridgeOptimizer, ::Type{CI{F, S}}) where {F, S}
     return is_bridged(b, F, S)
 end
@@ -7,13 +16,6 @@ function concrete_bridge_type(b::AbstractBridgeOptimizer,
                               S::Type{<:MOI.AbstractSet})
     return concrete_bridge_type(bridge_type(b, F, S), F, S)
 end
-
-bridge(b::AbstractBridgeOptimizer, ci::CI) = b.bridges[ci.value]
-function bridge(b::AbstractBridgeOptimizer,
-                ci::CI{MOI.SingleVariable, S}) where S
-    return b.single_variable_constraints[(ci.value, S)]
-end
-
 function MOI.supports_constraint(b::AbstractBridgeOptimizer,
                                 F::Type{<:MOI.AbstractFunction},
                                 S::Type{<:MOI.AbstractSet})

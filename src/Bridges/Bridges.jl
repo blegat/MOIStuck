@@ -16,7 +16,6 @@ const CI = MOI.ConstraintIndex
 
 abstract type AbstractBridge end
 include("bridgeoptimizer.jl")
-include("lazybridgeoptimizer.jl")
 
 include("slackbridge.jl")
 include("functionize_bridge.jl")
