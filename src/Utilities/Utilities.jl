@@ -24,6 +24,5 @@ include("copy.jl")
 include("results.jl")
 
 include("model.jl")
-include("mockoptimizer.jl")
 
 end # module

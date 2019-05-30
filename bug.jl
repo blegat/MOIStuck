@@ -6,8 +6,8 @@ MOIU.@model(NoRSOCModel, (), (),
             (MOI.SecondOrderCone, MOI.PositiveSemidefiniteConeTriangle),
             (), (), (), (),
             (MOI.VectorAffineFunction,))
-mock = MOIU.MockOptimizer(NoRSOCModel{Float64}());
-bridged_mock = MOIB.LazyBridgeOptimizer(mock);
+mock = NoRSOCModel{Float64}()
+bridged_mock = MOIB.LazyBridgeOptimizer(mock)
 tQ = MOI.add_variables(bridged_mock, 4)
 vov = MOI.VectorOfVariables(tQ)
 println("Calling")
