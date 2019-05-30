@@ -72,22 +72,6 @@ _SOCtoPSDaff(f::MOI.VectorAffineFunction, ::Type) = _SOCtoPSDaff(f, MOIU.eachsca
 MOI.supports_constraint(::Type{SOCtoPSDBridge{T}}, ::Type{<:Union{MOI.VectorOfVariables, MOI.VectorAffineFunction{T}}}, ::Type{MOI.SecondOrderCone}) where T = true
 added_constraint_types(::Type{SOCtoPSDBridge{T}}, ::Type{<:Union{MOI.VectorOfVariables, MOI.VectorAffineFunction{T}}}, ::Type{MOI.SecondOrderCone}) where T = [(MOI.VectorAffineFunction{T}, MOI.PositiveSemidefiniteConeTriangle)]
 
-function MOI.get(model::MOI.AbstractOptimizer, a::MOI.ConstraintPrimal, c::SOCtoPSDBridge)
-    MOI.get(model, a, c.cr)[trimap.(1:c.dim, 1)]
-end
-function MOI.get(model::MOI.AbstractOptimizer, a::MOI.ConstraintDual, c::SOCtoPSDBridge)
-    dual = MOI.get(model, a, c.cr)
-    tdual = sum(i -> dual[trimap(i, i)], 1:c.dim)
-    [tdual; dual[trimap.(2:c.dim, 1)]*2]
-end
-
-MOI.get(::SOCtoPSDBridge{T}, ::MOI.NumberOfConstraints{MOI.VectorAffineFunction{T}, MOI.PositiveSemidefiniteConeTriangle}) where T = 1
-MOI.get(b::SOCtoPSDBridge{T}, ::MOI.ListOfConstraintIndices{MOI.VectorAffineFunction{T}, MOI.PositiveSemidefiniteConeTriangle}) where T = [b.cr]
-
-function MOI.delete(model::MOI.AbstractOptimizer, c::SOCtoPSDBridge)
-    MOI.delete(model, c.cr)
-end
-
 """
 The `RSOCtoPSDBridge` transforms the second order cone constraint ``\\lVert x \\rVert \\le 2tu`` with ``u \\ge 0`` into the semidefinite cone constraints
 ```math
@@ -132,22 +116,4 @@ function _RSOCtoPSDaff(f::MOI.VectorAffineFunction, ::Type{T}) where T
     f_scalars = MOIU.eachscalar(f)
     g = MOIU.operate!(*, T, f_scalars[2], convert(T, 2))
     _SOCtoPSDaff(f_scalars[[1; 3:n]], g)
-end
-
-function MOI.get(model::MOI.AbstractOptimizer, a::MOI.ConstraintPrimal, c::RSOCtoPSDBridge)
-    x = MOI.get(model, MOI.ConstraintPrimal(), c.cr)[[trimap(1, 1); trimap(2, 2); trimap.(2:c.dim, 1)]]
-    x[2] /= 2 # It is (2u*I)[1,1] so it needs to be divided by 2 to get u
-    x
-end
-function MOI.get(model::MOI.AbstractOptimizer, a::MOI.ConstraintDual, c::RSOCtoPSDBridge)
-    dual = MOI.get(model, MOI.ConstraintDual(), c.cr)
-    udual = sum(i -> dual[trimap(i, i)], 2:c.dim)
-    [dual[1]; 2udual; dual[trimap.(2:c.dim, 1)]*2]
-end
-
-MOI.get(::RSOCtoPSDBridge{T}, ::MOI.NumberOfConstraints{MOI.VectorAffineFunction{T}, MOI.PositiveSemidefiniteConeTriangle}) where T = 1
-MOI.get(b::RSOCtoPSDBridge{T}, ::MOI.ListOfConstraintIndices{MOI.VectorAffineFunction{T}, MOI.PositiveSemidefiniteConeTriangle}) where T = [b.cr]
-
-function MOI.delete(model::MOI.AbstractOptimizer, c::RSOCtoPSDBridge)
-    MOI.delete(model, c.cr)
 end
