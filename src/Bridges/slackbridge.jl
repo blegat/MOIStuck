@@ -6,7 +6,7 @@ end
 function bridge_constraint(::Type{VectorSlackBridge{T, F, S}}, model,
                            f::MOI.AbstractVectorFunction, s::S) where {T, F, S}
     d = MOI.dimension(s)
-    slacks = MOI.add_variables(model, d)
+    slacks = MOI.VariableIndex.(1:d)
     new_f = MOIU.operate(-, T, f, MOI.VectorOfVariables(slacks))
     slacks_in_set = MOI.add_constraint(model, MOI.VectorOfVariables(slacks), s)
     equality = MOI.add_constraint(model, new_f, MOI.Zeros(d))

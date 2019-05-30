@@ -26,7 +26,7 @@ function bridge_constraint(::Type{GeoMeanBridge{T, F, G}}, model,
     n = d-1
     l = ilog2(n)
     N = 1 << l
-    xij = MOI.add_variables(model, N-1)
+    xij = MOI.VariableIndex.(1:(N-1))
     f_scalars = MOIU.eachscalar(f)
 
     xl1 = MOI.SingleVariable(xij[1])

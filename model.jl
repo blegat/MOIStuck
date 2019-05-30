@@ -35,20 +35,6 @@ end
 MOI.supports_constraint(model::Model{T}, ::Type{<:Union{}}, ::Type{<:Union{}}) where T = true
 MOI.supports_constraint(model::Model{T}, ::Type{<:Union{MOI.VectorAffineFunction{T}}}, ::Type{<:Union{MOI.SecondOrderCone, MOI.PositiveSemidefiniteConeTriangle}}) where T = true
 
-function MOI.add_variable(model::Model{T}) where T
-    vi = VI(model.num_variables_created += 1)
-    push!(model.single_variable_mask, 0x0)
-    push!(model.lower_bound, zero(T))
-    push!(model.upper_bound, zero(T))
-    if model.variable_indices !== nothing
-        push!(model.variable_indices, vi)
-    end
-    return vi
-end
-function MOI.add_variables(model::Model, n::Integer)
-    return [MOI.add_variable(model) for i in 1:n]
-end
-
 function MOI.add_constraint(model::Model, f::F, s::S) where {F<:MOI.AbstractFunction, S<:MOI.AbstractSet}
     if MOI.supports_constraint(model, F, S)
         ci = MOI.ConstraintIndex{F, S}(model.nextconstraintid += 1)
