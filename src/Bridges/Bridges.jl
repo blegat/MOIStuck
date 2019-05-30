@@ -14,7 +14,7 @@ const VQF{T} = MOI.VectorQuadraticFunction{T}
 const VI = MOI.VariableIndex
 const CI = MOI.ConstraintIndex
 
-include("bridge.jl")
+abstract type AbstractBridge end
 include("bridgeoptimizer.jl")
 include("lazybridgeoptimizer.jl")
 
