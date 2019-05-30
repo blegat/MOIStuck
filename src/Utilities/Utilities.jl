@@ -19,6 +19,4 @@ const CI{F,S} = MOI.ConstraintIndex{F,S}
 
 include("functions.jl")
 
-include("model.jl")
-
 end # module
