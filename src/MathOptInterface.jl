@@ -7,7 +7,13 @@ abstract type AbstractOptimizer <: ModelLike end
 abstract type UnsupportedError <: Exception end
 abstract type NotAllowedError <: Exception end
 
-include("indextypes.jl")
+struct ConstraintIndex{F, S}
+    value::Int64
+end
+struct VariableIndex
+    value::Int64
+end
+
 include("functions.jl")
 include("sets.jl")
 include("constraints.jl")
