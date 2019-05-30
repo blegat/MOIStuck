@@ -2,7 +2,6 @@ module Bridges
 
 include("../MathOptInterface.jl")
 const MOI = MathOptInterface
-const MOIU = MOI
 
 abstract type AbstractBridge end
 abstract type AbstractBridgeOptimizer <: MOI.AbstractOptimizer end
@@ -67,7 +66,7 @@ function bridge_constraint(::Type{VectorSlackBridge{T, F, S}}, model,
                            f::MOI.AbstractVectorFunction, s::S) where {T, F, S}
     d = MOI.dimension(s)
     slacks = MOI.VariableIndex.(1:d)
-    new_f = MOIU.operate(-, T, f, MOI.VectorOfVariables(slacks))
+    new_f = MOI.operate(-, T, f, MOI.VectorOfVariables(slacks))
     slacks_in_set = MOI.add_constraint(model, MOI.VectorOfVariables(slacks), s)
     equality = MOI.add_constraint(model, new_f, MOI.Zeros(d))
     return VectorSlackBridge{T, F, S}(slacks, slacks_in_set, equality)
@@ -90,7 +89,7 @@ end
 function concrete_bridge_type(::Type{<:VectorSlackBridge{T}},
                               F::Type{<:MOI.AbstractVectorFunction},
                               S::Type{<:MOI.AbstractVectorSet}) where T
-    F2 = MOIU.promote_operation(-, T, F, MOI.VectorOfVariables)
+    F2 = MOI.promote_operation(-, T, F, MOI.VectorOfVariables)
     return VectorSlackBridge{T, F2, S}
 end
 
@@ -122,18 +121,18 @@ struct RSOCBridge{T, F, G} <: AbstractBridge
 end
 function rotate_function(f::MOI.AbstractVectorFunction, T::Type)
     d = MOI.output_dimension(f)
-    f_scalars = MOIU.eachscalar(f)
+    f_scalars = MOI.eachscalar(f)
     t = f_scalars[1]
     u = f_scalars[2]
     x = f_scalars[3:d]
     s2 = √2
-    ts = MOIU.operate!(/, T, t, s2)
-    us = MOIU.operate!(/, T, u, s2)
+    ts = MOI.operate!(/, T, t, s2)
+    us = MOI.operate!(/, T, u, s2)
     # Cannot use `operate!` here since `ts` and `us` are needed for the next
     # line
     y  = ts - us
-    z  = MOIU.operate!(+, T, ts, us)
-    return MOIU.operate(vcat, T, z, y, x)
+    z  = MOI.operate!(+, T, ts, us)
+    return MOI.operate(vcat, T, z, y, x)
 end
 function bridge_constraint(::Type{RSOCBridge{T, F, G}}, model,
                            f::MOI.AbstractVectorFunction,
@@ -154,10 +153,10 @@ end
 function concrete_bridge_type(::Type{<:RSOCBridge{T}},
                               G::Type{<:MOI.AbstractVectorFunction},
                               ::Type{MOI.RotatedSecondOrderCone}) where T
-    S = MOIU.promote_operation(/, T, MOIU.scalar_type(G), T)
-    Y = MOIU.promote_operation(-, T, S, S)
-    Z = MOIU.promote_operation(+, T, S, S)
-    F = MOIU.promote_operation(vcat, T, Z, Y, G)
+    S = MOI.promote_operation(/, T, MOI.scalar_type(G), T)
+    Y = MOI.promote_operation(-, T, S, S)
+    Z = MOI.promote_operation(+, T, S, S)
+    F = MOI.promote_operation(vcat, T, Z, Y, G)
     return RSOCBridge{T, F, G}
 end
 
@@ -184,10 +183,10 @@ end
 function concrete_bridge_type(::Type{<:SOCRBridge{T}},
                               G::Type{<:MOI.AbstractVectorFunction},
                               ::Type{MOI.SecondOrderCone}) where T
-    S = MOIU.promote_operation(/, T, MOIU.scalar_type(G), T)
-    Y = MOIU.promote_operation(-, T, S, S)
-    Z = MOIU.promote_operation(+, T, S, S)
-    F = MOIU.promote_operation(vcat, T, Z, Y, G)
+    S = MOI.promote_operation(/, T, MOI.scalar_type(G), T)
+    Y = MOI.promote_operation(-, T, S, S)
+    Z = MOI.promote_operation(+, T, S, S)
+    F = MOI.promote_operation(vcat, T, Z, Y, G)
     return SOCRBridge{T, F, G}
 end
 
@@ -221,7 +220,7 @@ function bridge_constraint(::Type{GeoMeanBridge{T, F, G}}, model,
     l = ilog2(n)
     N = 1 << l
     xij = MOI.VariableIndex.(1:(N-1))
-    f_scalars = MOIU.eachscalar(f)
+    f_scalars = MOI.eachscalar(f)
 
     xl1 = MOI.SingleVariable(xij[1])
     sN = one(T) / √N
@@ -235,8 +234,8 @@ function bridge_constraint(::Type{GeoMeanBridge{T, F, G}}, model,
 
     t = f_scalars[1]
     # With sqrt(2)^l*t - xl1, we should scale both the ConstraintPrimal and ConstraintDual
-    tubc = MOIU.add_scalar_constraint(model,
-                                      MOIU.operate!(+, T, t, -sN * xl1),
+    tubc = MOI.add_scalar_constraint(model,
+                                      MOI.operate!(+, T, t, -sN * xl1),
                                       MOI.LessThan(zero(T)),
                                       allow_modify_function=true)
 
@@ -254,7 +253,7 @@ function bridge_constraint(::Type{GeoMeanBridge{T, F, G}}, model,
             end
             c = MOI.SingleVariable(xij[offset+j])
             socrc[offset + j] = MOI.add_constraint(model,
-                                                   MOIU.operate(vcat, T, a, b, c),
+                                                   MOI.operate(vcat, T, a, b, c),
                                                    MOI.RotatedSecondOrderCone(3))
         end
         offset = offsetnext
@@ -273,10 +272,10 @@ end
 function concrete_bridge_type(::Type{<:GeoMeanBridge{T}},
                               H::Type{<:MOI.AbstractVectorFunction},
                               ::Type{MOI.GeometricMeanCone}) where T
-    S = MOIU.scalar_type(H)
-    A = MOIU.promote_operation(*, T, T, MOI.SingleVariable)
-    F = MOIU.promote_operation(+, T, S, A)
-    G = MOIU.promote_operation(vcat, T, A, A, MOI.SingleVariable)
+    S = MOI.scalar_type(H)
+    A = MOI.promote_operation(*, T, T, MOI.SingleVariable)
+    F = MOI.promote_operation(+, T, S, A)
+    G = MOI.promote_operation(vcat, T, A, A, MOI.SingleVariable)
     return GeoMeanBridge{T, F, G}
 end
 
@@ -299,7 +298,7 @@ function bridge_constraint(::Type{RootDetBridge{T}}, model,
     tu, D, Δ, sdindex = extract_eigenvalues(model, f, d, 1)
     t = tu[1]
     DF = MOI.VectorAffineFunction{T}(MOI.VectorOfVariables(D))
-    gmindex = MOI.add_constraint(model, MOIU.operate(vcat, T, t, DF),
+    gmindex = MOI.add_constraint(model, MOI.operate(vcat, T, t, DF),
                                  MOI.GeometricMeanCone(d+1))
 
     return RootDetBridge(Δ, sdindex, gmindex)
@@ -322,7 +321,7 @@ function bridge_constraint(::Type{SOCtoPSDBridge{T}}, model, f,
 end
 
 _SOCtoPSDaff(f::MOI.VectorOfVariables, ::Type{T}) where T = _SOCtoPSDaff(MOI.VectorAffineFunction{T}(f), T)
-_SOCtoPSDaff(f::MOI.VectorAffineFunction, ::Type) = _SOCtoPSDaff(f, MOIU.eachscalar(f)[1])
+_SOCtoPSDaff(f::MOI.VectorAffineFunction, ::Type) = _SOCtoPSDaff(f, MOI.eachscalar(f)[1])
 
 MOI.supports_constraint(::Type{SOCtoPSDBridge{T}}, ::Type{<:Union{MOI.VectorOfVariables, MOI.VectorAffineFunction{T}}}, ::Type{MOI.SecondOrderCone}) where T = true
 added_constraint_types(::Type{SOCtoPSDBridge{T}}, ::Type{<:Union{MOI.VectorOfVariables, MOI.VectorAffineFunction{T}}}, ::Type{MOI.SecondOrderCone}) where T = [(MOI.VectorAffineFunction{T}, MOI.PositiveSemidefiniteConeTriangle)]
@@ -345,8 +344,8 @@ end
 _RSOCtoPSDaff(f::MOI.VectorOfVariables, ::Type{T}) where T = _RSOCtoPSDaff(MOI.VectorAffineFunction{T}(f), T)
 function _RSOCtoPSDaff(f::MOI.VectorAffineFunction, ::Type{T}) where T
     n = MOI.output_dimension(f)
-    f_scalars = MOIU.eachscalar(f)
-    g = MOIU.operate!(*, T, f_scalars[2], convert(T, 2))
+    f_scalars = MOI.eachscalar(f)
+    g = MOI.operate!(*, T, f_scalars[2], convert(T, 2))
     _SOCtoPSDaff(f_scalars[[1; 3:n]], g)
 end
 
