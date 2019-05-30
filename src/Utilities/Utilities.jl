@@ -1,11 +1,7 @@
-module Utilities
 
 using LinearAlgebra # For dot
 
-include("../MathOptInterface.jl")
 const MOI = MathOptInterface
-
-const MOIU = Utilities # used in macro
 
 const SVF = MOI.SingleVariable
 const VVF = MOI.VectorOfVariables
@@ -19,4 +15,3 @@ const CI{F,S} = MOI.ConstraintIndex{F,S}
 
 include("functions.jl")
 
-end # module

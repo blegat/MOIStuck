@@ -1,8 +1,8 @@
 module Bridges
 
-include("../Utilities/Utilities.jl")
-const MOIU = Utilities
-const MOI = Utilities.MathOptInterface
+include("../MathOptInterface.jl")
+const MOI = MathOptInterface
+const MOIU = MOI
 
 const SVF = MOI.SingleVariable
 const VVF = MOI.VectorOfVariables

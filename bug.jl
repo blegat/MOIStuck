@@ -1,7 +1,6 @@
 include("src/Bridges/Bridges.jl")
 const MOIB = Bridges
-const MOIU = MOIB.Utilities
-const MOI = MOIU.MathOptInterface
+const MOI = MOIB.MathOptInterface
 include("model.jl")
 mock = Model{Float64}()
 bridged_mock = MOIB.LazyBridgeOptimizer(mock)
