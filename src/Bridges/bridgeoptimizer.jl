@@ -1,19 +1,7 @@
 abstract type AbstractBridgeOptimizer <: MOI.AbstractOptimizer end
-
-function is_bridged end
 function is_bridged(b::AbstractBridgeOptimizer, ::Type{CI{F, S}}) where {F, S}
     return is_bridged(b, F, S)
 end
-is_bridged(b::AbstractBridgeOptimizer, ::Type{VI}) = false
-
-function supports_bridging_constraint(::AbstractBridgeOptimizer,
-                                      ::Type{<:MOI.AbstractFunction},
-                                      ::Type{<:MOI.AbstractSet})
-    return false
-end
-
-function bridge_type end
-
 function concrete_bridge_type(b::AbstractBridgeOptimizer,
                               F::Type{<:MOI.AbstractFunction},
                               S::Type{<:MOI.AbstractSet})
@@ -26,7 +14,6 @@ function bridge(b::AbstractBridgeOptimizer,
     return b.single_variable_constraints[(ci.value, S)]
 end
 
-# Constraints
 function MOI.supports_constraint(b::AbstractBridgeOptimizer,
                                 F::Type{<:MOI.AbstractFunction},
                                 S::Type{<:MOI.AbstractSet})
@@ -35,11 +22,6 @@ function MOI.supports_constraint(b::AbstractBridgeOptimizer,
     else
         return MOI.supports_constraint(b.model, F, S)
     end
-end
-function store_bridge(b::AbstractBridgeOptimizer, func::MOI.SingleVariable,
-                      set::MOI.AbstractSet, bridge)
-    b.single_variable_constraints[(func.variable.value, typeof(set))] = bridge
-    return MOI.ConstraintIndex{MOI.SingleVariable, typeof(set)}(func.variable.value)
 end
 function store_bridge(b::AbstractBridgeOptimizer, func::MOI.AbstractFunction,
                       set::MOI.AbstractSet, bridge)
@@ -60,15 +42,6 @@ function MOI.add_constraint(b::AbstractBridgeOptimizer, f::MOI.AbstractFunction,
         return store_bridge(b, f, s, bridge_constraint(BridgeType, b, f, s))
     else
         return MOI.add_constraint(b.model, f, s)
-    end
-end
-function MOI.add_constraints(b::AbstractBridgeOptimizer, f::Vector{F},
-                             s::Vector{S}) where { F <: MOI.AbstractFunction,
-                             S <: MOI.AbstractSet}
-    if is_bridged(b, F, S)
-        return MOI.add_constraint.(b, f, s)
-    else
-        return MOI.add_constraints(b.model, f, s)
     end
 end
 
