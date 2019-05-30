@@ -632,19 +632,19 @@ function fill_vector(vector::Vector, ::Type{T}, vector_offset::Int,
 end
 
 number_of_affine_terms(::Type{T}, ::T) where T = 0
-number_of_affine_terms(::Type, ::SVF) = 1
-number_of_affine_terms(::Type, f::VVF) = length(f.variables)
+number_of_affine_terms(::Type, ::SingleVariable) = 1
+number_of_affine_terms(::Type, f::VectorOfVariables) = length(f.variables)
 function number_of_affine_terms(
-    ::Type{T}, f::Union{SAF{T}, VAF{T}}) where T
+    ::Type{T}, f::Union{ScalarAffineFunction{T}, VectorAffineFunction{T}}) where T
     return length(f.terms)
 end
 function number_of_affine_terms(
-    ::Type{T}, f::Union{SQF{T}, VQF{T}}) where T
+    ::Type{T}, f::Union{ScalarQuadraticFunction{T}, VectorQuadraticFunction{T}}) where T
     return length(f.affine_terms)
 end
 
 function number_of_quadratic_terms(
-    ::Type{T}, f::Union{SQF{T}, VQF{T}}) where T
+    ::Type{T}, f::Union{ScalarQuadraticFunction{T}, VectorQuadraticFunction{T}}) where T
     return length(f.quadratic_terms)
 end
 
@@ -665,28 +665,28 @@ function fill_terms(terms::Vector{VectorAffineTerm{T}}, offset::Int,
                     output_offset::Int, func::T) where T
 end
 function fill_terms(terms::Vector{VectorAffineTerm{T}}, offset::Int,
-                    output_offset::Int, func::SVF) where T
+                    output_offset::Int, func::SingleVariable) where T
     terms[offset + 1] = offset_term(
         ScalarAffineTerm(one(T), func.variable), output_offset)
 end
 function fill_terms(terms::Vector{VectorAffineTerm{T}}, offset::Int,
-                    output_offset::Int, func::VVF) where T
+                    output_offset::Int, func::VectorOfVariables) where T
     n = number_of_affine_terms(T, func)
     terms[offset .+ (1:n)] .= VectorAffineTerm.(
         output_offset .+ (1:n), ScalarAffineTerm.(one(T), func.variables))
 end
 function fill_terms(terms::Vector{VectorAffineTerm{T}}, offset::Int,
-                    output_offset::Int, func::Union{SAF{T}, VAF{T}}) where T
+                    output_offset::Int, func::Union{ScalarAffineFunction{T}, VectorAffineFunction{T}}) where T
     n = number_of_affine_terms(T, func)
     terms[offset .+ (1:n)] .= offset_term.(func.terms, output_offset)
 end
 function fill_terms(terms::Vector{VectorAffineTerm{T}}, offset::Int,
-                    output_offset::Int, func::Union{SQF{T}, VQF{T}}) where T
+                    output_offset::Int, func::Union{ScalarQuadraticFunction{T}, VectorQuadraticFunction{T}}) where T
     n = number_of_affine_terms(T, func)
     terms[offset .+ (1:n)] .= offset_term.(func.affine_terms, output_offset)
 end
 function fill_terms(terms::Vector{VectorQuadraticTerm{T}}, offset::Int,
-                    output_offset::Int, func::Union{SQF{T}, VQF{T}}) where T
+                    output_offset::Int, func::Union{ScalarQuadraticFunction{T}, VectorQuadraticFunction{T}}) where T
     n = number_of_quadratic_terms(T, func)
     terms[offset .+ (1:n)] .= offset_term.(func.quadratic_terms, output_offset)
 end
@@ -698,14 +698,14 @@ function fill_constant(constant::Vector{T}, offset::Int,
     constant[offset + 1] = func
 end
 function fill_constant(constant::Vector{T}, offset::Int,
-                       output_offset::Int, func::Union{SVF, VVF}) where T
+                       output_offset::Int, func::Union{SingleVariable, VectorOfVariables}) where T
 end
 function fill_constant(constant::Vector{T}, offset::Int,
-                       output_offset::Int, func::Union{SAF{T}, SQF{T}}) where T
+                       output_offset::Int, func::Union{ScalarAffineFunction{T}, ScalarQuadraticFunction{T}}) where T
     constant[offset + 1] = func.constant
 end
 function fill_constant(constant::Vector{T}, offset::Int,
-                       output_offset::Int, func::Union{VAF{T}, VQF{T}}) where T
+                       output_offset::Int, func::Union{VectorAffineFunction{T}, VectorQuadraticFunction{T}}) where T
     n = output_dimension(func)
     constant[offset .+ (1:n)] .= func.constants
 end
@@ -734,7 +734,7 @@ function vectorize(funcs::AbstractVector{ScalarAffineFunction{T}}) where T
     constant = zeros(T, out_dim)
     fill_vector(terms, T, fill_terms, number_of_affine_terms, funcs)
     fill_vector(constant, T, fill_constant, output_dim, funcs)
-    return VAF(terms, constant)
+    return VectorAffineFunction(terms, constant)
 end
 
 """
@@ -753,31 +753,31 @@ function vectorize(funcs::AbstractVector{ScalarQuadraticFunction{T}}) where T
     fill_vector(affine_terms, T, fill_terms, number_of_affine_terms, funcs)
     fill_vector(quadratic_terms, T, fill_terms, number_of_quadratic_terms, funcs)
     fill_vector(constant, T, fill_constant, output_dim, funcs)
-    return VQF(affine_terms, quadratic_terms, constant)
+    return VectorQuadraticFunction(affine_terms, quadratic_terms, constant)
 end
 
 function promote_operation(::typeof(vcat), ::Type{T},
-                           ::Type{<:Union{ScalarAffineLike{T}, VVF, VAF{T}}}...) where T
-    return VAF{T}
+                           ::Type{<:Union{ScalarAffineLike{T}, VectorOfVariables, VectorAffineFunction{T}}}...) where T
+    return VectorAffineFunction{T}
 end
 function promote_operation(
     ::typeof(vcat), ::Type{T},
-    ::Type{<:Union{ScalarQuadraticLike{T}, VVF, VAF{T}, VQF{T}}}...) where T
-    return VQF{T}
+    ::Type{<:Union{ScalarQuadraticLike{T}, VectorOfVariables, VectorAffineFunction{T}, VectorQuadraticFunction{T}}}...) where T
+    return VectorQuadraticFunction{T}
 end
 
 function operate(::typeof(vcat), ::Type{T},
-                 funcs::Union{ScalarAffineLike{T}, VVF, VAF{T}}...) where T
+                 funcs::Union{ScalarAffineLike{T}, VectorOfVariables, VectorAffineFunction{T}}...) where T
     nterms = sum(func -> number_of_affine_terms(T, func), funcs)
     out_dim = sum(func -> output_dim(T, func), funcs)
     terms = Vector{VectorAffineTerm{T}}(undef, nterms)
     constant = zeros(T, out_dim)
     fill_vector(terms, T, 0, 0, fill_terms, number_of_affine_terms, funcs...)
     fill_vector(constant, T, 0, 0, fill_constant, output_dim, funcs...)
-    return VAF(terms, constant)
+    return VectorAffineFunction(terms, constant)
 end
 function operate(::typeof(vcat), ::Type{T},
-                 funcs::Union{ScalarQuadraticLike{T}, VVF, VAF{T}, VQF{T}}...) where T
+                 funcs::Union{ScalarQuadraticLike{T}, VectorOfVariables, VectorAffineFunction{T}, VectorQuadraticFunction{T}}...) where T
     num_affine_terms = sum(func -> number_of_affine_terms(T, func), funcs)
     num_quadratic_terms = sum(func -> number_of_quadratic_terms(T, func), funcs)
     out_dim = sum(func -> output_dim(T, func), funcs)
@@ -787,5 +787,5 @@ function operate(::typeof(vcat), ::Type{T},
     fill_vector(affine_terms, T, 0, 0, fill_terms, number_of_affine_terms, funcs...)
     fill_vector(quadratic_terms, T, 0, 0, fill_terms, number_of_quadratic_terms, funcs...)
     fill_vector(constant, T, 0, 0, fill_constant, output_dim, funcs...)
-    return VQF(affine_terms, quadratic_terms, constant)
+    return VectorQuadraticFunction(affine_terms, quadratic_terms, constant)
 end

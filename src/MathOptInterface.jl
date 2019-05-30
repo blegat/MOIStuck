@@ -315,16 +315,6 @@ function add_constraint(model::ModelLike, func::AbstractFunction,
                         set::AbstractSet)
 end
 
-const SVF = SingleVariable
-const VVF = VectorOfVariables
-const SAF{T} = ScalarAffineFunction{T}
-const VAF{T} = VectorAffineFunction{T}
-const SQF{T} = ScalarQuadraticFunction{T}
-const VQF{T} = VectorQuadraticFunction{T}
-
-const VI = VariableIndex
-const CI{F,S} = ConstraintIndex{F,S}
-
 include("operate.jl")
 
 end
