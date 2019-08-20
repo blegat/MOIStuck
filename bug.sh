@@ -1,1 +1,1 @@
-time timeout -s 9 120 /home/blegat/git/julia-master/julia --color=yes bug.jl
+time timeout -s 9 200 /home/blegat/git/julia-master/julia --color=yes bug.jl

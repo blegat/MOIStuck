@@ -26,7 +26,5 @@ include("results.jl")
 include("model.jl")
 include("parser.jl")
 include("mockoptimizer.jl")
-include("cachingoptimizer.jl")
-include("universalfallback.jl")
 
 end # module
